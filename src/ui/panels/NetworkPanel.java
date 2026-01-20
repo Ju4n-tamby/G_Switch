@@ -302,38 +302,41 @@ public class NetworkPanel extends JPanel {
         });
 
         addMouseListener(new MouseAdapter() {
+            private boolean clickedOnServer = false;
+
             @Override
             public void mousePressed(MouseEvent e) {
-                // Gestion des boutons
-                checkButtonPress(e);
+                clickedOnServer = false;
                 checkFieldFocus(e);
 
-                // Gestion de la sélection serveur
+                // Gestion de la sélection serveur (priorité haute)
                 if (currentMode == PanelMode.JOIN) {
                     int listX = GameConfig.WINDOW_WIDTH / 2 - 200;
                     int listY = 400;
                     int itemHeight = 50;
-                    boolean clickedServer = false;
                     for (int i = 0; i < discoveredServers.size(); i++) {
                         int itemY = listY + i * itemHeight;
                         if (e.getX() >= listX && e.getX() <= listX + 400 &&
                             e.getY() >= itemY && e.getY() <= itemY + itemHeight) {
-                            clickedServer = true;
-                            if (selectedServerIndex == i) {
-                                connectToServer();
-                            } else {
-                                selectedServerIndex = i;
-                            }
+                            clickedOnServer = true;
+                            selectedServerIndex = i;
                             break;
                         }
                     }
-                    // Si on ne clique sur rien, ne rien faire
+                }
+                
+                // Gestion des boutons (seulement si pas cliqué sur un serveur)
+                if (!clickedOnServer) {
+                    checkButtonPress(e);
                 }
             }
 
             @Override
             public void mouseReleased(MouseEvent e) {
-                checkButtonRelease(e);
+                if (!clickedOnServer) {
+                    checkButtonRelease(e);
+                }
+                clickedOnServer = false;
             }
 
             @Override
@@ -417,24 +420,6 @@ public class NetworkPanel extends JPanel {
             }
         }
         requestFocusInWindow();
-    }
-
-    private void checkServerSelection(MouseEvent e) {
-        if (currentMode != PanelMode.JOIN) return;
-
-        int listX = GameConfig.WINDOW_WIDTH / 2 - 200;
-        int listY = 400;
-        int itemHeight = 50;
-
-        for (int i = 0; i < discoveredServers.size(); i++) {
-            int itemY = listY + i * itemHeight;
-            if (e.getX() >= listX && e.getX() <= listX + 400 &&
-                e.getY() >= itemY && e.getY() <= itemY + itemHeight) {
-                selectedServerIndex = i;
-                connectToServer();
-                break;
-            }
-        }
     }
 
     private void setupKeyListeners() {

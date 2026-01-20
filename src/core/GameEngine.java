@@ -85,6 +85,10 @@ public class GameEngine {
                 break;
             case PLAYING:
                 cardLayout.show(mainContainer, "GAME");
+                // En mode réseau, charger les joueurs depuis le NetworkManager
+                if (gameMode == GameConfig.GameMode.NETWORK) {
+                    gamePanel.loadNetworkPlayers();
+                }
                 gamePanel.startGame();
                 gamePanel.requestFocusInWindow();
                 break;

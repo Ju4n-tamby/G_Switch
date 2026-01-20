@@ -298,6 +298,28 @@ public class GamePanel extends JPanel implements ActionListener, InputHandler.In
         inputHandler.setPlayerConfigs(configs);
     }
 
+    /**
+     * Charge les joueurs depuis le NetworkManager en mode réseau
+     */
+    public void loadNetworkPlayers() {
+        network.NetworkManager networkManager = network.NetworkManager.getInstance();
+        List<entity.Player> networkPlayers = networkManager.getNetworkPlayers();
+        
+        if (!networkPlayers.isEmpty()) {
+            players.clear();
+            // Convertir les joueurs du réseau (entity.Player) en factory.entity.Player
+            for (entity.Player p : networkPlayers) {
+                factory.entity.Player factoryPlayer = new factory.entity.Player(p.getPlayerId(), p.getPlayerName(), p.getPlayerColor());
+                // Copier la position et l'état
+                factoryPlayer.setX(p.getX());
+                factoryPlayer.setY(p.getY());
+                players.add(factoryPlayer);
+            }
+            player = players.get(0);
+            System.out.println("[GamePanel] Joueurs chargés depuis le réseau: " + players.size());
+        }
+    }
+
     public void resetGame() {
         // Réinitialiser tous les joueurs
         for (Player p : players) {
