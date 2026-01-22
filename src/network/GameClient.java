@@ -363,7 +363,11 @@ public class GameClient {
                             boolean alive = JsonUtils.getBoolean(ps, "alive", true);
                             int score = JsonUtils.getInt(ps, "score", 0);
 
-                            Player p = new Player(id, "Player" + id, getPlayerColor(id));
+                            String name = JsonUtils.getString(ps, "name", "Player" + id);
+                            String colorHex = JsonUtils.getString(ps, "color", null);
+                            Color color = colorHex != null ? Color.decode(colorHex) : getPlayerColor(id);
+
+                            Player p = new Player(id, name, color);
                             p.setX((int) x);
                             p.setY((int) y);
                             p.setVelocityY(vy);

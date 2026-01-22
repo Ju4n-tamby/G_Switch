@@ -407,6 +407,8 @@ public class GameServer {
             for (Player p : players) {
                 Map<String, Object> ps = new LinkedHashMap<>();
                 ps.put("id", p.getPlayerId());
+                ps.put("name", p.getPlayerName());
+                ps.put("color", colorToHex(p.getPlayerColor()));
                 ps.put("x", p.getX());
                 ps.put("y", p.getY());
                 ps.put("vy", p.getVelocityY());
@@ -633,6 +635,33 @@ public class GameServer {
 
     public List<Obstacle> getObstacles() {
         return obstacles;
+    }
+
+    /**
+     * Remplace l'état autoritatif du serveur avec l'état simulé localement (hôte).
+     * Utilisé lorsque l'hôte fait tourner la simulation et veut diffuser son état.
+     */
+    public void updateAuthoritativeState(List<Player> newPlayers,
+                                         List<Hole> newHoles,
+                                         List<Obstacle> newObstacles) {
+        if (!running || !gameStarted) {
+            return;
+        }
+
+        synchronized (players) {
+            players.clear();
+            players.addAll(newPlayers);
+        }
+
+        synchronized (holes) {
+            holes.clear();
+            holes.addAll(newHoles);
+        }
+
+        synchronized (obstacles) {
+            obstacles.clear();
+            obstacles.addAll(newObstacles);
+        }
     }
 
     public boolean isRunning() {

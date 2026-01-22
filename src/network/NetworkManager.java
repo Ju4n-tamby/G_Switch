@@ -322,6 +322,46 @@ public class NetworkManager {
     }
 
     /**
+     * Synchronise l'état autoritatif du serveur avec l'état simulé par l'hôte.
+     * Appelé à chaque tick du GamePanel quand on est l'hôte.
+     */
+    public void syncHostState(List<factory.entity.Player> players,
+                              List<factory.entity.Hole> holes,
+                              List<factory.entity.Obstacle> obstacles) {
+        if (mode != NetworkMode.HOST || server == null) {
+            return;
+        }
+
+        // Convertir en entités réseau
+        List<entity.Player> netPlayers = new ArrayList<>();
+        for (factory.entity.Player p : players) {
+            entity.Player np = new entity.Player(p.getPlayerId(), p.getPlayerName(), p.getPlayerColor());
+            np.setX(p.getX());
+            np.setY(p.getY());
+            np.setVelocityY(p.getVelocityY());
+            np.setGravity(entity.Gravity.valueOf(p.getGravity().name()));
+            if (!p.isAlive()) {
+                np.die();
+            }
+            np.setScore(p.getScore());
+            netPlayers.add(np);
+        }
+
+        List<entity.Hole> netHoles = new ArrayList<>();
+        for (factory.entity.Hole h : holes) {
+            netHoles.add(new entity.Hole(h.getX(), h.getWidth()));
+        }
+
+        List<entity.Obstacle> netObstacles = new ArrayList<>();
+        for (factory.entity.Obstacle o : obstacles) {
+            netObstacles.add(new entity.Obstacle((int) o.getX(), (int) o.getY(), o.getWidth(), o.getHeight()));
+        }
+
+        server.updateAuthoritativeState(netPlayers, netHoles, netObstacles);
+        server.broadcastGameState();
+    }
+
+    /**
      * Démarre la partie (hôte uniquement)
      */
     public void startGame() {

@@ -162,8 +162,16 @@ public class GamePanel extends JPanel implements ActionListener, InputHandler.In
 
         NeonButton retryBtn = new NeonButton("REJOUER", centerX, startY + 80, buttonWidth, buttonHeight, GameConfig.NEON_CYAN);
         retryBtn.setOnClick(() -> {
-            resetGame();
-            engine.setState(GameState.PLAYING);
+            // En mode réseau, l'hôte redémarre pour tout le monde
+            if (gameMode == GameConfig.GameMode.NETWORK && network.NetworkManager.getInstance().isHost()) {
+                resetGame();
+                // Ramener tout le monde au lobby puis relancer
+                network.NetworkManager.getInstance().returnToLobby();
+                network.NetworkManager.getInstance().startGame();
+            } else {
+                resetGame();
+                engine.setState(GameState.PLAYING);
+            }
         });
 
         NeonButton goMenuBtn = new NeonButton("MENU PRINCIPAL", centerX, startY + 150, buttonWidth, buttonHeight, GameConfig.NEON_PINK);
@@ -320,6 +328,41 @@ public class GamePanel extends JPanel implements ActionListener, InputHandler.In
         }
     }
 
+    /**
+     * Synchronise entièrement l'état local avec l'état réseau (client).
+     */
+    private void syncNetworkState(network.NetworkManager networkManager) {
+        List<entity.Player> netPlayers = networkManager.getNetworkPlayers();
+        if (!netPlayers.isEmpty()) {
+            players.clear();
+            for (entity.Player p : netPlayers) {
+                factory.entity.Player fp = new factory.entity.Player(p.getPlayerId(), p.getPlayerName(), p.getPlayerColor());
+                fp.setX(p.getX());
+                fp.setY(p.getY());
+                fp.setVelocityY(p.getVelocityY());
+                fp.setGravity(factory.entity.Gravity.valueOf(p.getGravity().name()));
+                if (!p.isAlive()) {
+                    fp.die();
+                }
+                fp.setScore(p.getScore());
+                players.add(fp);
+            }
+            player = players.get(0);
+        }
+
+        List<entity.Hole> netHoles = networkManager.getNetworkHoles();
+        holes.clear();
+        for (entity.Hole h : netHoles) {
+            holes.add(new factory.entity.Hole(h.getX(), h.getWidth()));
+        }
+
+        List<entity.Obstacle> netObstacles = networkManager.getNetworkObstacles();
+        obstacles.clear();
+        for (entity.Obstacle o : netObstacles) {
+            obstacles.add(new factory.entity.Obstacle((int) o.getX(), (int) o.getY(), o.getWidth(), o.getHeight()));
+        }
+    }
+
     public void resetGame() {
         // Réinitialiser tous les joueurs
         for (Player p : players) {
@@ -441,6 +484,20 @@ public class GamePanel extends JPanel implements ActionListener, InputHandler.In
     }
 
     private void update() {
+        // Mode réseau: les clients ne simulent pas, ils consomment l'état du serveur
+        if (gameMode == GameConfig.GameMode.NETWORK) {
+            network.NetworkManager nm = network.NetworkManager.getInstance();
+
+            // Client: récupérer l'état réseau et ne rien simuler localement
+            if (nm.isClient()) {
+                background.update();
+                platformRenderer.update();
+                syncNetworkState(nm);
+                return;
+            }
+            // Hôte: continue la simulation puis synchronise/broadcast l'état plus bas
+        }
+
         // Mise à jour du fond
         background.update();
         platformRenderer.update();
@@ -516,6 +573,11 @@ public class GamePanel extends JPanel implements ActionListener, InputHandler.In
 
         // Gestion de la ligne d'arrivée
         updateFinishLine();
+
+        // Si on est l'hôte réseau, diffuser l'état simulé
+        if (gameMode == GameConfig.GameMode.NETWORK) {
+            network.NetworkManager.getInstance().syncHostState(players, holes, obstacles);
+        }
     }
 
     private void updateFinishLine() {
