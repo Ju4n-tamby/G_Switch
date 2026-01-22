@@ -67,15 +67,24 @@ public class InputHandler implements KeyListener {
                 }
             }
             
-            // Si pas de config (mode réseau ou solo par défaut), ESPACE active le joueur 0
-            if (playerConfigs.isEmpty() && keyCode == KeyEvent.VK_SPACE) {
-                if (!pressedKeys.contains(keyCode)) {
-                    pressedKeys.add(keyCode);
-                    if (callback != null) {
-                        callback.onPlayerGravitySwitch(0);
-                    }
+            // Si pas de config (mode réseau ou solo par défaut)
+            if (playerConfigs.isEmpty()) {
+                // Id local (0 pour hôte, id attribué par le serveur pour le client)
+                int localId = 0;
+                if (engine.isNetworkMode()) {
+                    localId = network.NetworkManager.getInstance().getLocalPlayerId();
                 }
-                return;
+
+                // Touche par défaut: ESPACE
+                if (keyCode == KeyEvent.VK_SPACE) {
+                    if (!pressedKeys.contains(keyCode)) {
+                        pressedKeys.add(keyCode);
+                        if (callback != null) {
+                            callback.onPlayerGravitySwitch(localId);
+                        }
+                    }
+                    return;
+                }
             }
         }
 

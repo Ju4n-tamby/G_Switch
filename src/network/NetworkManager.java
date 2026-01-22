@@ -18,7 +18,6 @@ public class NetworkManager {
 
     private GameServer server;
     private GameClient client;
-    private GameEngine engine;
 
     // État
     private NetworkMode mode = NetworkMode.NONE;
@@ -75,9 +74,8 @@ public class NetworkManager {
         return instance;
     }
 
-    public void setEngine(GameEngine engine) {
-        this.engine = engine;
-    }
+    // Engine reference no longer needed
+    public void setEngine(GameEngine engine) {}
 
     // ==================== HÉBERGER UNE PARTIE ====================
 
@@ -510,6 +508,16 @@ public class NetworkManager {
             return server.getPlayerCount();
         }
         return 1;
+    }
+
+    /**
+     * Id du joueur local (0 pour l'hôte, id assigné par le serveur pour le client).
+     */
+    public int getLocalPlayerId() {
+        if (mode == NetworkMode.CLIENT && client != null) {
+            return client.getPlayerId();
+        }
+        return 0; // hôte
     }
 
     public List<Player> getNetworkPlayers() {
