@@ -429,13 +429,25 @@ public class GamePanel extends JPanel implements ActionListener, InputHandler.In
 
     @Override
     public void onPlayerGravitySwitch(int playerId) {
-        if (!isPaused && !isGameOver && !isVictory) {
-            // Trouver le joueur correspondant
-            for (Player p : players) {
-                if (p.getPlayerId() == playerId && p.isAlive()) {
-                    p.switchGravity();
-                    break;
-                }
+        if (isPaused || isGameOver || isVictory) {
+            return;
+        }
+
+        // Mode réseau : le client envoie l'input au serveur au lieu de simuler localement
+        if (gameMode == GameConfig.GameMode.NETWORK) {
+            network.NetworkManager nm = network.NetworkManager.getInstance();
+            if (nm.isClient()) {
+                nm.sendGravitySwitch();
+                return;
+            }
+            // Hôte : on continue à appliquer localement (serveur diffusé ensuite)
+        }
+
+        // Local/host: appliquer directement sur le joueur
+        for (Player p : players) {
+            if (p.getPlayerId() == playerId && p.isAlive()) {
+                p.switchGravity();
+                break;
             }
         }
     }
