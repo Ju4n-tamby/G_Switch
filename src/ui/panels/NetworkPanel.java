@@ -390,13 +390,26 @@ public class NetworkPanel extends JPanel {
     }
 
     private void checkButtonRelease(MouseEvent e) {
-        if (hostButton.isHovered()) hostButton.click();
-        if (joinButton.isHovered()) joinButton.click();
+        // Ne déclenche que les boutons pertinents au mode courant
+        if (currentMode == PanelMode.NONE) {
+            if (hostButton.isHovered()) hostButton.click();
+            if (joinButton.isHovered()) joinButton.click();
+        }
+
         if (backButton.isHovered()) backButton.click();
-        if (startButton.isHovered()) startButton.click();
-        if (readyButton.isHovered()) readyButton.click();
-        if (refreshButton.isHovered()) refreshButton.click();
-        if (connectButton.isHovered()) connectButton.click();
+
+        if (currentMode == PanelMode.LOBBY && networkManager.isHost()) {
+            if (startButton.isHovered()) startButton.click();
+        }
+
+        if (currentMode == PanelMode.LOBBY && networkManager.isClient()) {
+            if (readyButton.isHovered()) readyButton.click();
+        }
+
+        if (currentMode == PanelMode.JOIN) {
+            if (refreshButton.isHovered()) refreshButton.click();
+            if (connectButton.isHovered()) connectButton.click();
+        }
 
         hostButton.setPressed(false);
         joinButton.setPressed(false);
