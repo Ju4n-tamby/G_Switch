@@ -26,6 +26,7 @@ public class GameClient {
     private String playerName;
     private int playerId = -1;
     private String serverAddress;
+    private int serverTcpPort;
 
     // État
     private volatile boolean connected;
@@ -111,6 +112,7 @@ public class GameClient {
      */
     public void connect(String address, int port) {
         this.serverAddress = address;
+        this.serverTcpPort = port;
 
         new Thread(() -> {
             try {

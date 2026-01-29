@@ -395,6 +395,7 @@ public class GameServer {
      * Diffuse l'état du jeu à tous les clients en UDP
      */
     public void broadcastGameState() {
+        // Diffuser l'état du jeu à chaque tick, même si rien n'a changé
         if (!running || !gameStarted) {
             return;
         }
@@ -638,12 +639,13 @@ public class GameServer {
     }
 
     /**
-     * Remplace l'état autoritatif du serveur avec l'état simulé localement (hôte).
-     * Utilisé lorsque l'hôte fait tourner la simulation et veut diffuser son état.
+     * Remplace l'état autoritatif du serveur avec l'état simulé localement
+     * (hôte). Utilisé lorsque l'hôte fait tourner la simulation et veut
+     * diffuser son état.
      */
     public void updateAuthoritativeState(List<Player> newPlayers,
-                                         List<Hole> newHoles,
-                                         List<Obstacle> newObstacles) {
+            List<Hole> newHoles,
+            List<Obstacle> newObstacles) {
         if (!running || !gameStarted) {
             return;
         }

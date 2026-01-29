@@ -203,29 +203,40 @@ public class GamePanel extends JPanel implements ActionListener, InputHandler.In
         addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
-                // Clic gauche pour sauter (en jeu uniquement)
+                // Clic gauche pour inverser la gravité (en jeu uniquement)
                 if (!isPaused && !isGameOver && !isVictory && e.getButton() == MouseEvent.BUTTON1) {
                     // Vérifier qu'on ne clique pas sur un bouton
                     boolean onButton = false;
                     for (NeonButton btn : pauseButtons) {
-                        if (btn.contains(e.getX(), e.getY())) onButton = true;
+                        if (btn.contains(e.getX(), e.getY())) {
+                            onButton = true;
+                        }
                     }
                     for (NeonButton btn : gameOverButtons) {
-                        if (btn.contains(e.getX(), e.getY())) onButton = true;
+                        if (btn.contains(e.getX(), e.getY())) {
+                            onButton = true;
+                        }
                     }
                     if (!onButton) {
-                        player.switchGravity();
+                        // Appeler la logique d'input comme pour la touche
+                        if (player != null) {
+                            onPlayerGravitySwitch(player.getPlayerId());
+                        }
                     }
                 }
 
                 if (isPaused) {
                     for (NeonButton btn : pauseButtons) {
-                        if (btn.contains(e.getX(), e.getY())) btn.setPressed(true);
+                        if (btn.contains(e.getX(), e.getY())) {
+                            btn.setPressed(true);
+                        }
                     }
                 }
                 if (isGameOver || isVictory) {
                     for (NeonButton btn : gameOverButtons) {
-                        if (btn.contains(e.getX(), e.getY())) btn.setPressed(true);
+                        if (btn.contains(e.getX(), e.getY())) {
+                            btn.setPressed(true);
+                        }
                     }
                 }
             }
@@ -234,13 +245,17 @@ public class GamePanel extends JPanel implements ActionListener, InputHandler.In
             public void mouseReleased(MouseEvent e) {
                 if (isPaused) {
                     for (NeonButton btn : pauseButtons) {
-                        if (btn.isHovered()) btn.click();
+                        if (btn.isHovered()) {
+                            btn.click();
+                        }
                         btn.setPressed(false);
                     }
                 }
                 if (isGameOver || isVictory) {
                     for (NeonButton btn : gameOverButtons) {
-                        if (btn.isHovered()) btn.click();
+                        if (btn.isHovered()) {
+                            btn.click();
+                        }
                         btn.setPressed(false);
                     }
                 }
@@ -259,7 +274,6 @@ public class GamePanel extends JPanel implements ActionListener, InputHandler.In
     }
 
     // === GESTION DU JEU ===
-
     public void startGame() {
         isPaused = false;
         isGameOver = false;
@@ -302,8 +316,15 @@ public class GamePanel extends JPanel implements ActionListener, InputHandler.In
             player = players.get(0);
         }
 
-        // Passer les configurations à l'InputHandler
-        inputHandler.setPlayerConfigs(configs);
+        // En mode réseau client, s'assurer qu'on a au moins la config du joueur local pour l'input
+        if (gameMode == GameConfig.GameMode.NETWORK && players.size() > 0 && configs.isEmpty()) {
+            // Ajoute une config par défaut pour le joueur 0 (ESPACE)
+            List<PlayerConfig> defaultConfig = new java.util.ArrayList<>();
+            defaultConfig.add(PlayerConfig.createWithScheme(1));
+            inputHandler.setPlayerConfigs(defaultConfig);
+        } else {
+            inputHandler.setPlayerConfigs(configs);
+        }
     }
 
     /**
@@ -312,7 +333,7 @@ public class GamePanel extends JPanel implements ActionListener, InputHandler.In
     public void loadNetworkPlayers() {
         network.NetworkManager networkManager = network.NetworkManager.getInstance();
         List<entity.Player> networkPlayers = networkManager.getNetworkPlayers();
-        
+
         if (!networkPlayers.isEmpty()) {
             players.clear();
             // Convertir les joueurs du réseau (entity.Player) en factory.entity.Player
@@ -426,7 +447,6 @@ public class GamePanel extends JPanel implements ActionListener, InputHandler.In
     }
 
     // === CALLBACKS INPUT ===
-
     @Override
     public void onPlayerGravitySwitch(int playerId) {
         if (isPaused || isGameOver || isVictory) {
@@ -469,7 +489,6 @@ public class GamePanel extends JPanel implements ActionListener, InputHandler.In
     }
 
     // === BOUCLE DE JEU ===
-
     @Override
     public void actionPerformed(ActionEvent e) {
         if (!isPaused && !isGameOver && !isVictory) {
@@ -486,10 +505,14 @@ public class GamePanel extends JPanel implements ActionListener, InputHandler.In
 
         // Mise à jour des boutons
         if (isPaused) {
-            for (NeonButton btn : pauseButtons) btn.update();
+            for (NeonButton btn : pauseButtons) {
+                btn.update();
+            }
         }
         if (isGameOver || isVictory) {
-            for (NeonButton btn : gameOverButtons) btn.update();
+            for (NeonButton btn : gameOverButtons) {
+                btn.update();
+            }
         }
 
         repaint();
@@ -499,12 +522,13 @@ public class GamePanel extends JPanel implements ActionListener, InputHandler.In
         // Mode réseau: les clients ne simulent pas, ils consomment l'état du serveur
         if (gameMode == GameConfig.GameMode.NETWORK) {
             network.NetworkManager nm = network.NetworkManager.getInstance();
-
             // Client: récupérer l'état réseau et ne rien simuler localement
             if (nm.isClient()) {
                 background.update();
                 platformRenderer.update();
                 syncNetworkState(nm);
+                // Toujours demander un repaint pour garder le framerate fluide
+                repaint();
                 return;
             }
             // Hôte: continue la simulation puis synchronise/broadcast l'état plus bas
@@ -586,7 +610,7 @@ public class GamePanel extends JPanel implements ActionListener, InputHandler.In
         // Gestion de la ligne d'arrivée
         updateFinishLine();
 
-        // Si on est l'hôte réseau, diffuser l'état simulé
+        // Si on est l'hôte réseau, diffuser l'état simulé à chaque tick
         if (gameMode == GameConfig.GameMode.NETWORK) {
             network.NetworkManager.getInstance().syncHostState(players, holes, obstacles);
         }
@@ -625,7 +649,9 @@ public class GamePanel extends JPanel implements ActionListener, InputHandler.In
 
     private void checkObstacleCollisions() {
         for (Player p : players) {
-            if (!p.isAlive()) continue;
+            if (!p.isAlive()) {
+                continue;
+            }
 
             Rectangle playerBounds = p.getBounds();
 
@@ -655,8 +681,7 @@ public class GamePanel extends JPanel implements ActionListener, InputHandler.In
                         onPlayerDeath(p);
                         checkAllPlayersDead();
                     }
-                }
-                // Gravité vers le haut: mort si trop haut
+                } // Gravité vers le haut: mort si trop haut
                 else if (p.getGravity() == Gravity.UP && p.getY() + p.getHeight() < 0) {
                     if (p.isAlive()) {
                         p.die();
@@ -666,7 +691,9 @@ public class GamePanel extends JPanel implements ActionListener, InputHandler.In
                 }
             }
 
-            if (!p.isAlive()) continue;
+            if (!p.isAlive()) {
+                continue;
+            }
 
             // Vérifier si au-dessus d'un trou avec une marge de tolérance
             // On utilise les bords du joueur pour détecter si une partie significative est au-dessus du trou
@@ -681,8 +708,8 @@ public class GamePanel extends JPanel implements ActionListener, InputHandler.In
 
                 // Le joueur est au-dessus du trou si son centre OU une partie significative est dans le trou
                 boolean centerOverHole = playerCenterX > holeLeft && playerCenterX < holeRight;
-                boolean significantOverlap = playerLeft < holeRight && playerRight > holeLeft &&
-                                            Math.min(playerRight, holeRight) - Math.max(playerLeft, holeLeft) > p.getWidth() * 0.4;
+                boolean significantOverlap = playerLeft < holeRight && playerRight > holeLeft
+                        && Math.min(playerRight, holeRight) - Math.max(playerLeft, holeLeft) > p.getWidth() * 0.4;
 
                 if (centerOverHole || significantOverlap) {
                     overHole = true;
@@ -742,6 +769,7 @@ public class GamePanel extends JPanel implements ActionListener, InputHandler.In
     }
 
     private void checkAllPlayersDead() {
+        // Correction : ne passer en GAME_OVER que si tous les joueurs sont morts
         boolean allDead = true;
         for (Player p : players) {
             if (p.isAlive()) {
@@ -755,7 +783,6 @@ public class GamePanel extends JPanel implements ActionListener, InputHandler.In
     }
 
     // === RENDU ===
-
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
@@ -1070,7 +1097,7 @@ public class GamePanel extends JPanel implements ActionListener, InputHandler.In
             fm = g2d.getFontMetrics();
             x = (GameConfig.WINDOW_WIDTH - fm.stringWidth(winnerText)) / 2;
             g2d.setColor(new Color(winner.getPlayerColor().getRed(), winner.getPlayerColor().getGreen(),
-                                   winner.getPlayerColor().getBlue(), (int) (255 * victoryAlpha)));
+                    winner.getPlayerColor().getBlue(), (int) (255 * victoryAlpha)));
             g2d.drawString(winnerText, x, 280);
         }
 
@@ -1080,7 +1107,7 @@ public class GamePanel extends JPanel implements ActionListener, InputHandler.In
         fm = g2d.getFontMetrics();
         x = (GameConfig.WINDOW_WIDTH - fm.stringWidth(congrats)) / 2;
         g2d.setColor(new Color(GameConfig.NEON_GREEN.getRed(), GameConfig.NEON_GREEN.getGreen(),
-                               GameConfig.NEON_GREEN.getBlue(), (int) (255 * victoryAlpha)));
+                GameConfig.NEON_GREEN.getBlue(), (int) (255 * victoryAlpha)));
         g2d.drawString(congrats, x, 340);
 
         // Score du vainqueur

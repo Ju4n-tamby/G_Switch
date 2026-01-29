@@ -8,9 +8,8 @@ import entity.Player;
 import java.util.*;
 
 /**
- * Gestionnaire réseau central
- * Fait le pont entre le jeu et les composants réseau (serveur/client)
- * Simplifie l'utilisation du réseau depuis l'UI
+ * Gestionnaire réseau central Fait le pont entre le jeu et les composants
+ * réseau (serveur/client) Simplifie l'utilisation du réseau depuis l'UI
  */
 public class NetworkManager {
 
@@ -18,6 +17,7 @@ public class NetworkManager {
 
     private GameServer server;
     private GameClient client;
+    private GameEngine engine;
 
     // État
     private NetworkMode mode = NetworkMode.NONE;
@@ -28,8 +28,8 @@ public class NetworkManager {
     private NetworkListener listener;
 
     public enum NetworkMode {
-        NONE,       // Pas de réseau
-        HOST,       // Héberge une partie
+        NONE, // Pas de réseau
+        HOST, // Héberge une partie
         CLIENT      // Connecté à un serveur
     }
 
@@ -37,15 +37,25 @@ public class NetworkManager {
      * Interface de callback pour les événements réseau
      */
     public interface NetworkListener {
+
         void onModeChanged(NetworkMode mode);
+
         void onPlayerListUpdate(List<PlayerInfo> players);
+
         void onChatMessage(String playerName, String message, boolean isSystem);
+
         void onGameStart();
+
         void onReturnToLobby();
+
         void onDisconnected(String reason);
+
         void onError(String error);
+
         void onPingUpdate(int ping);
+
         void onServerFound(LANDiscovery.ServerInfo server);
+
         void onServerLost(String address);
     }
 
@@ -53,6 +63,7 @@ public class NetworkManager {
      * Informations sur un joueur dans le lobby
      */
     public static class PlayerInfo {
+
         public int id;
         public String name;
         public String colorHex;
@@ -65,7 +76,8 @@ public class NetworkManager {
         }
     }
 
-    private NetworkManager() {}
+    private NetworkManager() {
+    }
 
     public static NetworkManager getInstance() {
         if (instance == null) {
@@ -74,18 +86,17 @@ public class NetworkManager {
         return instance;
     }
 
-    // Engine reference no longer needed
-    public void setEngine(GameEngine engine) {}
+    public void setEngine(GameEngine engine) {
+        this.engine = engine;
+    }
 
     // ==================== HÉBERGER UNE PARTIE ====================
-
     /**
      * Démarre un serveur et devient l'hôte
      */
     public boolean hostGame(String playerName) {
-        if (mode != NetworkMode.NONE) {
-            stopNetwork();
-        }
+        // Toujours arrêter proprement tout serveur ou client existant avant de créer un nouveau serveur
+        stopNetwork();
 
         String serverName = "Partie de " + playerName;
         server = new GameServer(serverName);
@@ -155,7 +166,6 @@ public class NetworkManager {
     }
 
     // ==================== REJOINDRE UNE PARTIE ====================
-
     /**
      * Démarre la recherche de serveurs LAN
      */
@@ -288,7 +298,6 @@ public class NetworkManager {
     }
 
     // ==================== ACTIONS ====================
-
     /**
      * Envoie un message de chat
      */
@@ -324,8 +333,8 @@ public class NetworkManager {
      * Appelé à chaque tick du GamePanel quand on est l'hôte.
      */
     public void syncHostState(List<factory.entity.Player> players,
-                              List<factory.entity.Hole> holes,
-                              List<factory.entity.Obstacle> obstacles) {
+            List<factory.entity.Hole> holes,
+            List<factory.entity.Obstacle> obstacles) {
         if (mode != NetworkMode.HOST || server == null) {
             return;
         }
@@ -380,8 +389,8 @@ public class NetworkManager {
     }
 
     /**
-     * Met à jour l'état du jeu côté serveur
-     * Appelé à chaque tick par le GamePanel quand on est l'hôte
+     * Met à jour l'état du jeu côté serveur Appelé à chaque tick par le
+     * GamePanel quand on est l'hôte
      */
     public void broadcastGameState() {
         if (mode == NetworkMode.HOST && server != null && inGame) {
@@ -414,9 +423,10 @@ public class NetworkManager {
     }
 
     // ==================== HELPERS ====================
-
     private void notifyPlayerListUpdate() {
-        if (listener == null || server == null) return;
+        if (listener == null || server == null) {
+            return;
+        }
 
         List<PlayerInfo> infos = new ArrayList<>();
 
@@ -446,7 +456,9 @@ public class NetworkManager {
     }
 
     private void notifyPlayerListFromMaps(List<Map<String, Object>> players) {
-        if (listener == null) return;
+        if (listener == null) {
+            return;
+        }
 
         List<PlayerInfo> infos = new ArrayList<>();
         for (Map<String, Object> pm : players) {
@@ -467,7 +479,6 @@ public class NetworkManager {
     }
 
     // ==================== ACCESSEURS ====================
-
     public void setListener(NetworkListener listener) {
         this.listener = listener;
     }
@@ -508,16 +519,6 @@ public class NetworkManager {
             return server.getPlayerCount();
         }
         return 1;
-    }
-
-    /**
-     * Id du joueur local (0 pour l'hôte, id assigné par le serveur pour le client).
-     */
-    public int getLocalPlayerId() {
-        if (mode == NetworkMode.CLIENT && client != null) {
-            return client.getPlayerId();
-        }
-        return 0; // hôte
     }
 
     public List<Player> getNetworkPlayers() {

@@ -7,8 +7,7 @@ import java.awt.geom.Point2D;
 import java.util.LinkedList;
 
 /**
- * Classe représentant un joueur
- * Conçue pour supporter le multijoueur local
+ * Classe représentant un joueur Conçue pour supporter le multijoueur local
  */
 public class Player {
 
@@ -137,7 +136,7 @@ public class Player {
         // Particules de traînée
         if (grounded && !falling) {
             particles.emitTrail(x + GameConfig.PLAYER_WIDTH / 2,
-                              y + GameConfig.PLAYER_HEIGHT, playerColor);
+                    y + GameConfig.PLAYER_HEIGHT, playerColor);
         }
 
         particles.update();
@@ -148,7 +147,7 @@ public class Player {
      */
     private void updateTrail() {
         trail.addFirst(new Point2D.Double(x + GameConfig.PLAYER_WIDTH / 2,
-                                          y + GameConfig.PLAYER_HEIGHT / 2));
+                y + GameConfig.PLAYER_HEIGHT / 2));
 
         while (trail.size() > GameConfig.TRAIL_LENGTH) {
             trail.removeLast();
@@ -159,7 +158,11 @@ public class Player {
      * Change la gravité du joueur
      */
     public void switchGravity() {
-        if (grounded && !falling && alive) {
+        // Correction : seul le joueur mort ne peut plus agir, les autres peuvent sauter si vivants
+        if (!alive) {
+            return;
+        }
+        if (grounded && !falling) {
             gravity = gravity.opposite();
 
             // Impulsion initiale forte vers la nouvelle direction
@@ -172,8 +175,8 @@ public class Player {
 
             // Particules lors du switch
             particles.emitGravitySwitch(x + GameConfig.PLAYER_WIDTH / 2,
-                                       y + GameConfig.PLAYER_HEIGHT / 2,
-                                       playerColor);
+                    y + GameConfig.PLAYER_HEIGHT / 2,
+                    playerColor);
         }
     }
 
@@ -184,12 +187,13 @@ public class Player {
         if (alive) {
             alive = false;
             particles.emitDeath(x + GameConfig.PLAYER_WIDTH / 2,
-                              y + GameConfig.PLAYER_HEIGHT / 2, playerColor);
+                    y + GameConfig.PLAYER_HEIGHT / 2, playerColor);
         }
     }
 
     /**
-     * Vérifie si le joueur est complètement hors de l'écran (pour arrêter le rendu)
+     * Vérifie si le joueur est complètement hors de l'écran (pour arrêter le
+     * rendu)
      */
     public boolean isOffScreen() {
         return y < -GameConfig.PLAYER_HEIGHT * 2 || y > GameConfig.WINDOW_HEIGHT + GameConfig.PLAYER_HEIGHT;
@@ -199,7 +203,9 @@ public class Player {
      * Dessine le joueur et ses effets
      */
     public void render(Graphics2D g2d) {
-        if (!alive && alpha <= 0) return;
+        if (!alive && alpha <= 0) {
+            return;
+        }
 
         // Appliquer l'alpha
         Composite originalComposite = g2d.getComposite();
@@ -210,7 +216,7 @@ public class Player {
             // Utiliser le sprite
             Image currentSprite = (gravity == Gravity.UP) ? spriteFlipped : sprite;
             g2d.drawImage(currentSprite, (int) x, (int) y,
-                         GameConfig.PLAYER_WIDTH, GameConfig.PLAYER_HEIGHT, null);
+                    GameConfig.PLAYER_WIDTH, GameConfig.PLAYER_HEIGHT, null);
         } else {
             // Dessiner un personnage simplifié
             renderSimplePlayer(g2d);
@@ -233,8 +239,8 @@ public class Player {
 
         // Corps principal - forme arrondie
         GradientPaint bodyGradient = new GradientPaint(
-            px, py, playerColor,
-            px + w, py + h, playerColor.darker().darker()
+                px, py, playerColor,
+                px + w, py + h, playerColor.darker().darker()
         );
         g2d.setPaint(bodyGradient);
         g2d.fillRoundRect(px + 5, py + 10, w - 10, h - 15, 10, 10);
@@ -259,7 +265,7 @@ public class Player {
 
         // Contour lumineux
         g2d.setColor(new Color(playerColor.getRed(), playerColor.getGreen(),
-                               playerColor.getBlue(), 150));
+                playerColor.getBlue(), 150));
         g2d.setStroke(new BasicStroke(2));
         g2d.drawRoundRect(px + 5, py + 10, w - 10, h - 15, 10, 10);
     }
@@ -312,8 +318,8 @@ public class Player {
 
         // Visière (position ajustée)
         g2d.setColor(GameConfig.NEON_PINK);
-        int visY = py + offsetY + (int)(12 * scaleY);
-        g2d.fillRect(px + offsetX + 10, visY, scaledW - 20, (int)(5 * scaleY));
+        int visY = py + offsetY + (int) (12 * scaleY);
+        g2d.fillRect(px + offsetX + 10, visY, scaledW - 20, (int) (5 * scaleY));
 
         // Contour lumineux
         g2d.setColor(playerColor.brighter());
@@ -331,15 +337,17 @@ public class Player {
      * Dessine la traînée
      */
     private void renderTrail(Graphics2D g2d) {
-        if (trail.size() < 2) return;
+        if (trail.size() < 2) {
+            return;
+        }
 
         for (int i = 0; i < trail.size() - 1; i++) {
             Point2D.Double p = trail.get(i);
             float trailAlpha = (float) (trail.size() - i) / trail.size() * 0.5f * alpha;
             g2d.setColor(new Color(playerColor.getRed(), playerColor.getGreen(),
-                                   playerColor.getBlue(), (int) (trailAlpha * 255)));
+                    playerColor.getBlue(), (int) (trailAlpha * 255)));
             int size = (int) ((trail.size() - i) / 2);
-            g2d.fillOval((int) p.x - size/2, (int) p.y - size/2, size, size);
+            g2d.fillOval((int) p.x - size / 2, (int) p.y - size / 2, size, size);
         }
     }
 
@@ -347,37 +355,69 @@ public class Player {
      * Dessine l'indicateur de gravité
      */
     private void renderGravityIndicator(Graphics2D g2d) {
-        if (!alive) return;
+        if (!alive) {
+            return;
+        }
 
         Color indicatorColor = grounded && !falling ? Color.GREEN : Color.GRAY;
         g2d.setColor(indicatorColor);
         g2d.setFont(new Font("Arial", Font.BOLD, 16));
 
         String arrow = gravity == Gravity.DOWN ? "▼" : "▲";
-        int arrowY = gravity == Gravity.DOWN ?
-                    (int) y + GameConfig.PLAYER_HEIGHT + 15 : (int) y - 5;
-        g2d.drawString(arrow, (int) x + GameConfig.PLAYER_WIDTH/2 - 5, arrowY);
+        int arrowY = gravity == Gravity.DOWN
+                ? (int) y + GameConfig.PLAYER_HEIGHT + 15 : (int) y - 5;
+        g2d.drawString(arrow, (int) x + GameConfig.PLAYER_WIDTH / 2 - 5, arrowY);
     }
 
     // === GETTERS & SETTERS ===
+    public int getPlayerId() {
+        return playerId;
+    }
 
-    public int getPlayerId() { return playerId; }
-    public String getPlayerName() { return playerName; }
-    public Color getPlayerColor() { return playerColor; }
+    public String getPlayerName() {
+        return playerName;
+    }
 
-    public double getX() { return x; }
-    public void setX(double x) { this.x = x; }
+    public Color getPlayerColor() {
+        return playerColor;
+    }
 
-    public double getY() { return y; }
-    public void setY(double y) { this.y = y; }
+    public double getX() {
+        return x;
+    }
 
-    public int getWidth() { return GameConfig.PLAYER_WIDTH; }
-    public int getHeight() { return GameConfig.PLAYER_HEIGHT; }
+    public void setX(double x) {
+        this.x = x;
+    }
 
-    public Gravity getGravity() { return gravity; }
+    public double getY() {
+        return y;
+    }
 
-    public boolean isAlive() { return alive; }
-    public boolean isGrounded() { return grounded; }
+    public void setY(double y) {
+        this.y = y;
+    }
+
+    public int getWidth() {
+        return GameConfig.PLAYER_WIDTH;
+    }
+
+    public int getHeight() {
+        return GameConfig.PLAYER_HEIGHT;
+    }
+
+    public Gravity getGravity() {
+        return gravity;
+    }
+
+    public boolean isAlive() {
+        return alive;
+    }
+
+    public boolean isGrounded() {
+        return grounded;
+    }
+
     public void setGrounded(boolean grounded) {
         this.grounded = grounded;
         if (grounded) {
@@ -386,18 +426,38 @@ public class Player {
         }
     }
 
-    public boolean isFalling() { return falling; }
-    public void setFalling(boolean falling) { this.falling = falling; }
+    public boolean isFalling() {
+        return falling;
+    }
 
-    public int getScore() { return score; }
-    public void addScore(int points) { this.score += points; }
-    public void setScore(int score) { this.score = score; }
+    public void setFalling(boolean falling) {
+        this.falling = falling;
+    }
+
+    public int getScore() {
+        return score;
+    }
+
+    public void addScore(int points) {
+        this.score += points;
+    }
+
+    public void setScore(int score) {
+        this.score = score;
+    }
 
     // Méthodes pour le réseau
-    public double getVelocityY() { return speedY; }
-    public void setVelocityY(double vy) { this.speedY = vy; }
+    public double getVelocityY() {
+        return speedY;
+    }
 
-    public void setGravity(Gravity gravity) { this.gravity = gravity; }
+    public void setVelocityY(double vy) {
+        this.speedY = vy;
+    }
+
+    public void setGravity(Gravity gravity) {
+        this.gravity = gravity;
+    }
 
     public void setSprite(Image sprite, Image spriteFlipped) {
         this.sprite = sprite;
@@ -409,6 +469,6 @@ public class Player {
      */
     public Rectangle getBounds() {
         return new Rectangle((int) x + 5, (int) y + 5,
-                            GameConfig.PLAYER_WIDTH - 10, GameConfig.PLAYER_HEIGHT - 10);
+                GameConfig.PLAYER_WIDTH - 10, GameConfig.PLAYER_HEIGHT - 10);
     }
 }
